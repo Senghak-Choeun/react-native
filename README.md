@@ -1,719 +1,473 @@
-# Lab 4 — Refactor SpendWise into Reusable Components
+# ICT 304 — Session 5 Practice Handout
 
-**ICT 304 · Mobile App Cross-platform Development II**  
-**Session 4 · Core React Native Components & Modular UI**  
-**Duration:** 60 minutes  
-**Work:** Individual
+## Make SpendWise Interactive with User Input
 
----
-
-## Lab Goal
-
-You are given a working SpendWise screen where most of the UI is written directly inside `App.js`.
-
-Your task is to refactor the screen into smaller, reusable UI components.
-
-By the end of this lab, your project should include:
-
-```text
-SpendWise/
-├── App.js
-└── components/
-    ├── ScreenHeader.js
-    ├── TotalCard.js
-    └── ExpenseItem.js
-```
-
-Your final `App.js` should focus on **assembling the screen**, rather than containing all of the detailed JSX.
+**Duration:** 45 minutes  
+**Application:** SpendWise  
+**Work mode:** Individual practice
 
 ---
 
-## Starting Point
+## Learning goals
 
-Use the base code provided by your lecturer.
+By the end of this practice, you should be able to:
 
-Before changing anything:
-
-1. Run the app.
-2. Confirm the SpendWise screen renders correctly.
-3. Read through `App.js`.
-4. Identify repeated or meaningful sections of the interface.
-
-Do not redesign the screen yet.
-
-Your job is to improve the **code structure** while keeping the visible result approximately the same.
+1. Store changing text with `useState`.
+2. Connect a `TextInput` to state.
+3. Read the values entered by a user.
+4. Add a new expense object to an array stored in state.
+5. Render the updated expense list with `.map()`.
+6. Recalculate the total automatically with `.reduce()`.
+7. Perform basic input validation.
 
 ---
 
-# Task 1 — Identify Component Boundaries
+## The problem
 
-Look at the existing `App.js`.
+During the lecture, the **Add Sample Expense** button added a fixed expense:
 
-Identify which JSX belongs to:
-
-### `ScreenHeader`
-
-```text
-SpendWise
-Good morning!
-Avatar
+```jsx
+const newExpense = {
+  id: Date.now().toString(),
+  title: 'Snack',
+  amount: 2.5,
+};
 ```
 
-### `TotalCard`
+This proves that state can update the screen, but a real user should be able to choose the expense title and amount.
+
+Your task is to create this interaction:
 
 ```text
-Spent this month
-$342.50
-```
-
-The same structure is also used for:
-
-```text
-Budget left
-$157.50
-```
-
-and:
-
-```text
-Daily average
-$11.42
-```
-
-### `ExpenseItem`
-
-```text
-Lunch
-Food
--$4.50
-```
-
-The same structure is repeated for several expenses.
-
-Before coding, your component tree should look roughly like:
-
-```text
-App
-│
-├── ScreenHeader
-│
-├── TotalCard
-├── TotalCard
-├── TotalCard
-│
-├── ExpenseItem
-├── ExpenseItem
-├── ExpenseItem
-└── ExpenseItem
+Enter title + enter amount → press Add Expense → update list and total
 ```
 
 ---
 
-# Task 2 — Create the `components` Folder
+## Expected starting point
 
-Inside your project, create:
+Continue from your existing SpendWise project. Your screen should already have:
 
-```text
-components/
+- An `expenses` array or expenses state.
+- An `ExpenseItem` component that receives props.
+- A list rendered using `.map()`.
+- A total calculated using `.reduce()`.
+
+Example state:
+
+```jsx
+const [expenses, setExpenses] = useState([
+  { id: '1', title: 'Lunch', amount: 5 },
+  { id: '2', title: 'Transport', amount: 3.5 },
+  { id: '3', title: 'Coffee', amount: 2 },
+]);
 ```
 
-Your project should now look like:
-
-```text
-SpendWise/
-├── App.js
-├── components/
-├── assets/
-├── app.json
-└── package.json
-```
-
-Inside `components/`, create:
-
-```text
-ScreenHeader.js
-TotalCard.js
-ExpenseItem.js
-```
+If your previous screen is incomplete, first create a simple screen containing a total, two inputs, an Add button, and the expense list. Visual polish is not the main goal today.
 
 ---
 
-# Task 3 — Build `ScreenHeader`
+# Part 1 — Create state for both inputs
 
-Move the header UI from `App.js` into:
+**Suggested time: 5 minutes**
 
-```text
-components/ScreenHeader.js
-```
+The component needs to remember what the user types into each field.
 
-Your component should contain:
-
-- the SpendWise app name;
-- the greeting;
-- the avatar.
-
-Start with:
+Inside your `App` component, create two additional state variables:
 
 ```jsx
-import { View, Text, StyleSheet } from 'react-native';
-
-export default function ScreenHeader() {
-  return (
-    <View>
-      {/* Move the header JSX here */}
-    </View>
-  );
-}
+const [title, setTitle] = useState('');
+const [amount, setAmount] = useState('');
 ```
 
-Move the relevant header styles into the same file.
+Why is the initial amount an empty string instead of `0`?
 
-Your `ScreenHeader.js` should be responsible for its own styling.
+> `TextInput` works with text. We will convert the amount into a number when the user submits the form.
 
-Then import it into `App.js`:
+### Checkpoint
+
+Your component should now have three pieces of state:
 
 ```jsx
-import ScreenHeader from './components/ScreenHeader';
-```
-
-Use it:
-
-```jsx
-<ScreenHeader />
-```
-
-### Checkpoint 1
-
-The header should still look approximately the same as before.
-
-Your `App.js` should no longer contain the detailed header JSX.
-
----
-
-# Task 4 — Build `TotalCard`
-
-The Monthly Summary currently repeats this structure:
-
-```jsx
-<View style={styles.summaryCard}>
-  <Text style={styles.summaryLabel}>
-    Spent this month
-  </Text>
-
-  <Text style={styles.summaryAmount}>
-    $342.50
-  </Text>
-</View>
-```
-
-Create:
-
-```text
-components/TotalCard.js
-```
-
-The component should receive:
-
-```text
-label
-amount
-```
-
-as props.
-
-Start with:
-
-```jsx
-import { View, Text, StyleSheet } from 'react-native';
-
-export default function TotalCard({ label, amount }) {
-  return (
-    <View>
-      {/* Build the card here */}
-    </View>
-  );
-}
-```
-
-Inside the component, use:
-
-```jsx
-{label}
-```
-
-and:
-
-```jsx
-{amount}
-```
-
-instead of hardcoding the text.
-
-Move the summary-card styles from `App.js` into `TotalCard.js`.
-
----
-
-## Use `TotalCard` in `App.js`
-
-Import it:
-
-```jsx
-import TotalCard from './components/TotalCard';
-```
-
-Replace the three repeated summary-card blocks with:
-
-```jsx
-<TotalCard
-  label="Spent this month"
-  amount="$342.50"
-/>
-
-<TotalCard
-  label="Budget left"
-  amount="$157.50"
-/>
-
-<TotalCard
-  label="Daily average"
-  amount="$11.42"
-/>
-```
-
-### Checkpoint 2
-
-Your Monthly Summary should still show all three values.
-
-But now all three use the **same component**.
-
----
-
-## Challenge 1 — Add One More Card
-
-Add another summary card without copying the original JSX.
-
-Choose one:
-
-```text
-Savings
-$75.00
-```
-
-or:
-
-```text
-Income
-$500.00
-```
-
-or create your own.
-
-You should only need another:
-
-```jsx
-<TotalCard ... />
-```
-
----
-
-# Task 5 — Build `ExpenseItem`
-
-Now look at the Recent Expenses section.
-
-The same structure is repeated several times:
-
-```jsx
-<View style={styles.expenseItem}>
-  <View>
-    <Text style={styles.expenseName}>Lunch</Text>
-    <Text style={styles.expenseCategory}>Food</Text>
-  </View>
-
-  <Text style={styles.expenseAmount}>-$4.50</Text>
-</View>
-```
-
-Create:
-
-```text
-components/ExpenseItem.js
-```
-
-Your component should receive:
-
-```text
-name
-category
-amount
-```
-
-as props.
-
-Start with:
-
-```jsx
-import { View, Text, StyleSheet } from 'react-native';
-
-export default function ExpenseItem({
-  name,
-  category,
-  amount,
-}) {
-  return (
-    <View>
-      {/* Build the expense row here */}
-    </View>
-  );
-}
-```
-
-Use:
-
-```jsx
-{name}
-```
-
-```jsx
-{category}
-```
-
-```jsx
-{amount}
-```
-
-inside your JSX.
-
-Move the related styles into `ExpenseItem.js`.
-
----
-
-# Task 6 — Replace the Repeated Expense JSX
-
-Import your new component into `App.js`:
-
-```jsx
-import ExpenseItem from './components/ExpenseItem';
-```
-
-Replace the repeated expense blocks with:
-
-```jsx
-<ExpenseItem
-  name="Lunch"
-  category="Food"
-  amount="-$4.50"
-/>
-
-<ExpenseItem
-  name="Grab"
-  category="Transport"
-  amount="-$3.25"
-/>
-
-<ExpenseItem
-  name="Coffee"
-  category="Food"
-  amount="-$2.00"
-/>
-
-<ExpenseItem
-  name="Mobile Data"
-  category="Utilities"
-  amount="-$5.00"
-/>
-```
-
-### Checkpoint 3
-
-The Recent Expenses section should look approximately the same as before.
-
-Your `App.js` should no longer contain the detailed `expenseItem` layout.
-
----
-
-## Challenge 2 — Add Your Own Expense
-
-Add one new expense using `ExpenseItem`.
-
-Choose your own:
-
-- name;
-- category;
-- amount.
-
-For example:
-
-```jsx
-<ExpenseItem
-  name="Books"
-  category="Education"
-  amount="-$12.00"
-/>
-```
-
-Do not copy this example exactly.
-
----
-
-# Task 7 — Refactor `App.js`
-
-At this point, review `App.js`.
-
-It should now be much easier to read.
-
-The main UI should look closer to:
-
-```jsx
-<ScrollView style={styles.screen}>
-  <View style={styles.container}>
-    <ScreenHeader />
-
-    <Text style={styles.sectionTitle}>
-      Monthly Summary
-    </Text>
-
-    <TotalCard ... />
-    <TotalCard ... />
-    <TotalCard ... />
-
-    <View style={styles.sectionHeader}>
-      <Text style={styles.sectionTitle}>
-        Recent Expenses
-      </Text>
-
-      <Text style={styles.seeAll}>
-        See All
-      </Text>
-    </View>
-
-    <ExpenseItem ... />
-    <ExpenseItem ... />
-    <ExpenseItem ... />
-    <ExpenseItem ... />
-
-    {/* Quick Add Expense remains here */}
-  </View>
-</ScrollView>
-```
-
-You do not need to extract every part of the screen.
-
-The goal is to identify **meaningful UI units**, not to create a component for every `Text` or `View`.
-
----
-
-# Task 8 — Keep Component Styles with the Component
-
-Review your `StyleSheet` in `App.js`.
-
-Styles that belong only to:
-
-```text
-ScreenHeader
-```
-
-should live in:
-
-```text
-ScreenHeader.js
-```
-
-Styles that belong only to:
-
-```text
-TotalCard
-```
-
-should live in:
-
-```text
-TotalCard.js
-```
-
-Styles that belong only to:
-
-```text
-ExpenseItem
-```
-
-should live in:
-
-```text
-ExpenseItem.js
-```
-
-`App.js` should keep only styles that belong to the overall screen, such as:
-
-```text
-screen
-container
-sectionHeader
-sectionTitle
-seeAll
-input
-inputLabel
-addButton
-addButtonText
-footerText
-```
-
----
-
-# Challenge 3 — Render Expenses from an Array
-
-Your current code still repeats:
-
-```jsx
-<ExpenseItem ... />
-<ExpenseItem ... />
-<ExpenseItem ... />
-```
-
-Let's make the data easier to manage.
-
-Above `App`, create:
-
-```javascript
-const expenses = [
-  {
-    id: '1',
-    name: 'Lunch',
-    category: 'Food',
-    amount: '-$4.50',
-  },
-  {
-    id: '2',
-    name: 'Grab',
-    category: 'Transport',
-    amount: '-$3.25',
-  },
-  {
-    id: '3',
-    name: 'Coffee',
-    category: 'Food',
-    amount: '-$2.00',
-  },
-  {
-    id: '4',
-    name: 'Mobile Data',
-    category: 'Utilities',
-    amount: '-$5.00',
-  },
-];
-```
-
-Then replace the repeated `ExpenseItem` components with:
-
-```jsx
-{expenses.map((expense) => (
-  <ExpenseItem
-    key={expense.id}
-    name={expense.name}
-    category={expense.category}
-    amount={expense.amount}
-  />
-))}
-```
-
-### What happened?
-
-```text
-expenses array
-      ↓
-    .map()
-      ↓
-one ExpenseItem for each object
-      ↓
-screen
-```
-
-`key` gives React a unique identity for each row:
-
-```jsx
-key={expense.id}
-```
-
----
-
-# Challenge 4 — Add Another Expense to the Array
-
-Do not add another `<ExpenseItem />`.
-
-Instead, add another object to:
-
-```javascript
 expenses
+title
+amount
 ```
 
-For example:
+---
 
-```javascript
-{
-  id: '5',
-  name: 'Books',
-  category: 'Education',
-  amount: '-$12.00',
+# Part 2 — Connect state to `TextInput`
+
+**Suggested time: 8 minutes**
+
+Import `TextInput` if it is not already imported:
+
+```jsx
+import {
+  View,
+  Text,
+  TextInput,
+  Pressable,
+  StyleSheet,
+} from 'react-native';
+```
+
+Add an input for the expense title:
+
+```jsx
+<TextInput
+  style={styles.input}
+  placeholder="Expense title"
+  value={title}
+  onChangeText={setTitle}
+/>
+```
+
+Add another input for the amount:
+
+```jsx
+<TextInput
+  style={styles.input}
+  placeholder="Amount"
+  value={amount}
+  onChangeText={setAmount}
+  keyboardType="decimal-pad"
+/>
+```
+
+The important connection is:
+
+```text
+TextInput displays state → user types → onChangeText updates state
+```
+
+### Checkpoint
+
+Temporarily display the input values:
+
+```jsx
+<Text>{title}</Text>
+<Text>{amount}</Text>
+```
+
+Run the app and type into both inputs. The displayed values should change immediately. Remove these temporary `<Text>` elements after testing.
+
+---
+
+# Part 3 — Create the Add Expense button
+
+**Suggested time: 5 minutes**
+
+Create a button with `Pressable`:
+
+```jsx
+<Pressable style={styles.addButton} onPress={addExpense}>
+  <Text style={styles.addButtonText}>Add Expense</Text>
+</Pressable>
+```
+
+Add basic styles if your project does not already have them:
+
+```jsx
+input: {
+  borderWidth: 1,
+  borderColor: '#d1d5db',
+  borderRadius: 10,
+  padding: 12,
+  marginBottom: 10,
+  backgroundColor: '#ffffff',
+},
+addButton: {
+  backgroundColor: '#2563eb',
+  borderRadius: 10,
+  padding: 14,
+  alignItems: 'center',
+  marginBottom: 16,
+},
+addButtonText: {
+  color: '#ffffff',
+  fontWeight: '600',
+},
+```
+
+The application will show an error until you create the `addExpense` function.
+
+---
+
+# Part 4 — Build an expense from the input values
+
+**Suggested time: 10 minutes**
+
+Create the function inside your component:
+
+```jsx
+function addExpense() {
+  const numericAmount = Number(amount);
+
+  const newExpense = {
+    id: Date.now().toString(),
+    title: title,
+    amount: numericAmount,
+  };
+
+  setExpenses([...expenses, newExpense]);
 }
 ```
 
-Save the file.
+Test the application:
 
-Your new expense should appear automatically because `.map()` turns every object in the array into an `ExpenseItem`.
+1. Enter an expense title.
+2. Enter an amount.
+3. Press **Add Expense**.
+4. Confirm that the new expense appears.
+5. Confirm that the total changes.
 
----
+### Think before continuing
 
-# Final Project Structure
+Why do we write this?
 
-By the end of the lab, your project should look approximately like:
+```jsx
+const numericAmount = Number(amount);
+```
 
-```text
-SpendWise/
-├── App.js
-│
-├── components/
-│   ├── ScreenHeader.js
-│   ├── TotalCard.js
-│   └── ExpenseItem.js
-│
-├── assets/
-├── app.json
-└── package.json
+`TextInput` gives us text. Without conversion, JavaScript may treat the amount as a string instead of a number.
+
+For example:
+
+```jsx
+5 + '2.5' // produces '52.5', not 7.5
 ```
 
 ---
 
-# Final Check
+# Part 5 — Validate and reset the form
 
-Before submitting, confirm:
+**Suggested time: 7 minutes**
 
-- [ ] The app still runs without errors.
-- [ ] `ScreenHeader` is in its own file.
-- [ ] `TotalCard` is in its own file.
-- [ ] `ExpenseItem` is in its own file.
-- [ ] `TotalCard` uses props.
-- [ ] `ExpenseItem` uses props.
-- [ ] Repeated expense data is stored in an array.
-- [ ] `.map()` renders the expense rows.
-- [ ] Each rendered expense has a unique `key`.
-- [ ] Component-specific styles have been moved out of `App.js`.
-- [ ] The final screen still looks approximately like the original SpendWise screen.
+Your current function may accept:
+
+- An empty title.
+- An empty amount.
+- Letters instead of a number.
+- A negative or zero amount.
+
+Add this validation before creating `newExpense`:
+
+```jsx
+if (
+  title.trim() === '' ||
+  amount.trim() === '' ||
+  Number.isNaN(numericAmount) ||
+  numericAmount <= 0
+) {
+  return;
+}
+```
+
+After successfully adding an expense, clear both inputs:
+
+```jsx
+setTitle('');
+setAmount('');
+```
+
+Your function should follow this order:
+
+```text
+1. Convert the amount
+2. Validate the input
+3. Create the expense object
+4. Update the expenses state
+5. Clear both inputs
+```
+
+### Required testing
+
+Test all four cases:
+
+| Test | Expected result |
+|---|---|
+| `Lunch` and `5` | Expense is added |
+| Empty title and `5` | Nothing is added |
+| `Lunch` and empty amount | Nothing is added |
+| `Lunch` and `-5` | Nothing is added |
 
 ---
 
-# What to Submit
+# Required completion checklist
 
-Submit:
+Before starting the challenges, confirm that:
 
-1. **One screenshot** of the completed SpendWise screen.
-2. Your project source code according to the lecturer's submission instructions.
+- [ ] The screen has a title input.
+- [ ] The screen has an amount input.
+- [ ] Both inputs are connected to state.
+- [ ] The Add Expense button runs `addExpense`.
+- [ ] A new expense uses the user's input.
+- [ ] The amount is stored as a number.
+- [ ] Invalid expenses are not added.
+- [ ] Both inputs clear after a successful submission.
+- [ ] The list updates without restarting the app.
+- [ ] The total updates automatically.
 
-Before submitting, make sure your project runs successfully.
+---
 
-You should also be able to explain:
+# Challenges
 
-1. Why did we create `TotalCard` instead of keeping three repeated `View` blocks?
-2. What do props allow us to change?
-3. Why is `ExpenseItem` reusable?
-4. What does `.map()` do?
-5. Why does each rendered row need a `key`?
-6. Why is the new `App.js` easier to read than the original version?
+Complete as many as you can after finishing the required work. Do not skip validation to reach the challenges.
+
+## Challenge 1 — Show a useful validation message
+
+The current validation silently returns. Create an error state:
+
+```jsx
+const [error, setError] = useState('');
+```
+
+Show an appropriate message when the input is invalid:
+
+```jsx
+{error !== '' && (
+  <Text style={styles.errorText}>{error}</Text>
+)}
+```
+
+Requirements:
+
+- Display a message for missing fields.
+- Display a different message for an invalid amount.
+- Clear the error after a valid expense is added.
+
+Do not copy one generic message for every problem. Decide which message will help the user correct the input.
+
+---
+
+## Challenge 2 — Display the newest expense first
+
+Currently, the new expense is added at the end:
+
+```jsx
+setExpenses([...expenses, newExpense]);
+```
+
+Change the array update so that the newest expense appears at the top of the list.
+
+**Hint:** Think about where `newExpense` should be placed in the new array.
+
+---
+
+## Challenge 3 — Add an expense category
+
+Add another `TextInput` for a category such as:
+
+- Food
+- Transport
+- Education
+- Shopping
+
+Requirements:
+
+1. Create category state.
+2. Connect it to a new input.
+3. Include the category in `newExpense`.
+4. Pass it to `ExpenseItem` as a prop.
+5. Display it inside the expense row.
+6. Clear it after submission.
+
+Decide whether category should be required or optional, and be prepared to explain your choice.
+
+---
+
+## Challenge 4 — Delete an expense
+
+Add a Delete button to each `ExpenseItem`.
+
+When the button is pressed, remove only the selected expense from the state array.
+
+**Hints:**
+
+```jsx
+array.filter(...)
+```
+
+```jsx
+expense.id
+```
+
+Questions to consider:
+
+- Which component owns the `expenses` state?
+- Which component knows which Delete button was pressed?
+- How can the child component ask its parent to delete an item?
+
+This challenge previews callback props and “events up,” which will be studied more closely in the next session.
+
+---
+
+## Challenge 5 — Extract an `ExpenseForm` component
+
+Move the input interface into:
+
+```text
+components/ExpenseForm.js
+```
+
+The component should receive a function prop:
+
+```jsx
+<ExpenseForm onAddExpense={addExpense} />
+```
+
+Decide which state should remain in `App` and which state could move into `ExpenseForm`.
+
+Be prepared to explain:
+
+> Why should the expenses array remain in the parent component?
+
+This is an advanced challenge. Complete it only after the required functionality works correctly.
+
+---
+
+# Exit questions
+
+Answer these questions before leaving:
+
+1. Why does each `TextInput` need both `value` and `onChangeText`?
+2. Why must the amount be converted with `Number()`?
+3. Why do we call `setExpenses()` instead of using `expenses.push()`?
+4. Why does the total update even though we do not call `setTotal()`?
+5. What happens after `setTitle('')` and `setAmount('')` are called?
+
+---
+
+# Submission
+
+Submit the following to Canvas if requested by your instructor:
+
+1. Your updated project source code.
+2. One screenshot showing:
+   - The completed input form.
+   - At least four expenses in the list.
+   - The updated total.
+3. A short note stating which optional challenge you completed, if any.
+
+---
+
+## Final expected behavior
+
+Your application should support this complete flow:
+
+```text
+User enters title and amount
+        ↓
+User presses Add Expense
+        ↓
+Input is validated
+        ↓
+New object is added to expenses state
+        ↓
+React renders the screen again
+        ↓
+Expense list and total both update
+        ↓
+Input fields are cleared
+```
