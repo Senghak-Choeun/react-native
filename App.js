@@ -3,7 +3,6 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  Pressable,
 } from 'react-native';
 import { useState } from 'react';
 
@@ -11,13 +10,9 @@ import { useState } from 'react';
 import ScreenHeader from './components/ScreenHeader';
 import TotalCard from './components/TotalCard';
 import ExpenseItem from './components/ExpenseItem';
-import ExpenseForm from './components/ExpenseForm'; 
+import ExpenseForm from './components/ExpenseForm';
 
 export default function App() {
-  const [error, setError] = useState('');
-  const [category, setCategory] = useState('');
-  const [title, setTitle] = useState('');
-  const [amount, setAmount] = useState('');
   const [expenses, setExpenses] = useState([
     { id: '1', name: 'Lunch', category: 'Food', amount: -4.50 },
     { id: '2', name: 'Grab', category: 'Transport', amount: -3.25 },
@@ -35,37 +30,14 @@ export default function App() {
   const totalRaw = expenses.reduce((sum, expense) => sum + expense.amount, 0);
   const total = `-$${Math.abs(totalRaw).toFixed(2)}`;
 
-  function addExpense(name, category, amount) {
-    const numericAmount = Number(amount);
-
-    if (title.trim() === '' || amount.trim() === '' || category.trim() === '') {
-      setError('Please fill in all fields (title, category, amount).');
-      return;
-    }
-
-    if (Number.isNaN(numericAmount) || numericAmount <= 0) {
-      setError('Please enter a valid amount greater than 0.');
-      return;
-    }
-
-    const newExpense = {
-      id: Date.now().toString(),
-      name,
-      category,
-      amount: -numericAmount,
-    };
-
-    setExpenses([newExpense, ...expenses]);
-
-    // Reset inputs
-    setTitle('');
-    setCategory('');
-    setAmount('');
-    setError('');
+  function addExpense(newExpense) {
+    setExpenses((currentExpenses) => [newExpense, ...currentExpenses]);
   }
 
   const deleteExpense = (idToDelete) => {
-    setExpenses(expenses.filter((expense) => expense.id !== idToDelete));
+    setExpenses((currentExpenses) =>
+      currentExpenses.filter((expense) => expense.id !== idToDelete)
+    );
   };
 
   return (
@@ -74,7 +46,7 @@ export default function App() {
         {/* Header Component */}
         <ScreenHeader />
 
-        {/* Monthly Summary */}
+        {/* Monthly Summary (Original 3 Cards Preserved) */}
         <Text style={styles.sectionTitle}>Monthly Summary</Text>
         <TotalCard label="Spent this month" amount="$342.50" />
         <TotalCard label="Budget left" amount="$157.50" />
@@ -87,46 +59,22 @@ export default function App() {
         </View>
 
         {expenses.map((expense) => (
-          <View key={expense.id} style={styles.expenseRow}>
-            <ExpenseItem
-              name={expense.name}
-              category={expense.category}
-              amount={`-$${Math.abs(expense.amount).toFixed(2)}`}
-            />
-            <Pressable
-              onPress={() => deleteExpense(expense.id)}
-              style={styles.deleteButton}
-            >
-              <Text style={styles.deleteButtonText}>Delete</Text>
-            </Pressable>
-          </View>
+          <ExpenseItem
+            key={expense.id}
+            name={expense.name}
+            category={expense.category}
+            amount={`-$${Math.abs(expense.amount).toFixed(2)}`}
+            onDelete={() => deleteExpense(expense.id)}
+          />
         ))}
 
-        {/* Total Expense */}
+        {/* Dynamic Total Expense Card (Updated with dynamic value) */}
         <TotalCard label="Total expense" amount={total} />
 
         {/* Quick Add Expense */}
         <Text style={styles.sectionTitle}>Quick Add Expense</Text>
 
-        {/* Render ExpenseForm with props */}
-        <ExpenseForm
-          title={title}
-          setTitle={setTitle}
-          amount={amount}
-          setAmount={setAmount}
-          category={category}
-          setCategory={setCategory}
-          styles={styles}
-        />
-
-        {error !== '' && <Text style={styles.errorText}>{error}</Text>}
-
-        <Pressable
-          onPress={() => addExpense(title, category, amount)}
-          style={styles.addButton}
-        >
-          <Text style={styles.addButtonText}>+ Add Expense</Text>
-        </Pressable>
+        <ExpenseForm onAddExpense={addExpense} styles={styles} />
 
         <Text style={styles.footerText}>
           Track your spending. Build better habits.
@@ -161,23 +109,6 @@ const styles = StyleSheet.create({
   seeAll: {
     fontSize: 14,
     color: '#666',
-  },
-  expenseRow: {
-    marginBottom: 8,
-  },
-  deleteButton: {
-    backgroundColor: '#ef4444',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 6,
-    alignSelf: 'flex-end',
-    marginTop: -8,
-    marginBottom: 12,
-  },
-  deleteButtonText: {
-    color: '#ffffff',
-    fontSize: 12,
-    fontWeight: '600',
   },
   inputLabel: {
     fontSize: 14,
